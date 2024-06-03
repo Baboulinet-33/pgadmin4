@@ -118,11 +118,11 @@ RUN rm -rf /pgadmin4/docs/en_US/_build/html/_static/*.png
 # Create additional builders to get all of the PostgreSQL utilities
 #########################################################################
 
-FROM postgres:12-alpine AS pg12-builder
-FROM postgres:13-alpine AS pg13-builder
-FROM postgres:14-alpine AS pg14-builder
-FROM postgres:15-alpine AS pg15-builder
-FROM postgres:16-alpine AS pg16-builder
+FROM docker.io/postgres:12-alpine AS pg12-builder
+FROM docker.io/postgres:13-alpine AS pg13-builder
+FROM docker.io/postgres:14-alpine AS pg14-builder
+FROM docker.io/postgres:15-alpine AS pg15-builder
+FROM docker.io/postgres:16-alpine AS pg16-builder
 
 FROM alpine:latest AS tool-builder
 
@@ -190,7 +190,6 @@ COPY DEPENDENCIES /pgadmin4/DEPENDENCIES
 RUN apk add \
         python3 \
         py3-pip \
-        postfix \
         krb5-libs \
         libjpeg-turbo \
         shadow \
@@ -198,25 +197,21 @@ RUN apk add \
         tzdata \
         libedit \
         libldap \
-        libcap && \
-    /venv/bin/python3 -m pip install --no-cache-dir gunicorn==22.0.0 && \
-    find / -type d -name '__pycache__' -exec rm -rf {} + && \
-    useradd -r -u 5050 -g root -s /sbin/nologin pgadmin && \
-    mkdir -p /run/pgadmin /var/lib/pgadmin && \
-    chown pgadmin:root /run/pgadmin /var/lib/pgadmin && \
-    chmod g=u /var/lib/pgadmin && \
-    touch /pgadmin4/config_distro.py && \
-    chown pgadmin:root /pgadmin4/config_distro.py && \
-    chmod g=u /pgadmin4/config_distro.py && \
-    chmod g=u /etc/passwd && \
-    setcap CAP_NET_BIND_SERVICE=+eip /usr/bin/python3.12 && \
-    echo "pgadmin ALL = NOPASSWD: /usr/sbin/postfix start" > /etc/sudoers.d/postfix && \
-    echo "pgadminr ALL = NOPASSWD: /usr/sbin/postfix start" >> /etc/sudoers.d/postfix
+        libcap 
+RUN    /venv/bin/python3 -m pip install --no-cache-dir gunicorn==22.0.0
+RUN    find / -type d -name '__pycache__' -exec rm -rf {} +
+RUN    useradd -r -u 888 -g root -s /sbin/nologin pgadmin
+RUN    mkdir -p /run/pgadmin /var/lib/pgadmin
+RUN    chown pgadmin:root /run/pgadmin /var/lib/pgadmin
+RUN    chmod g=u /var/lib/pgadmin
+RUN    touch /pgadmin4/config_distro.py
+RUN    chown pgadmin:root /pgadmin4/config_distro.py
+RUN    chmod g=u /pgadmin4/config_distro.py
 
 USER pgadmin
 
 # Finish up
 VOLUME /var/lib/pgadmin
-EXPOSE 80 443
+EXPOSE 5050 5443
 
 ENTRYPOINT ["/entrypoint.sh"]
