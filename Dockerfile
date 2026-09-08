@@ -111,12 +111,12 @@ RUN rm -rf /pgadmin4/docs/en_US/_build/html/_static/*.png
 # Create additional builders to get all of the PostgreSQL utilities
 #########################################################################
 
-FROM postgres:13-alpine AS pg13-builder
-FROM postgres:14-alpine AS pg14-builder
-FROM postgres:15-alpine AS pg15-builder
-FROM postgres:16-alpine AS pg16-builder
-FROM postgres:17-alpine AS pg17-builder
-FROM postgres:18-alpine AS pg18-builder
+FROM docker.io/postgres:13-alpine AS pg13-builder
+FROM docker.io/postgres:14-alpine AS pg14-builder
+FROM docker.io/postgres:15-alpine AS pg15-builder
+FROM docker.io/postgres:16-alpine AS pg16-builder
+FROM docker.io/postgres:17-alpine AS pg17-builder
+FROM docker.io/postgres:18-alpine AS pg18-builder
 
 FROM alpine:latest AS tool-builder
 
@@ -161,7 +161,6 @@ FROM python:3-alpine
 RUN apk update && apk upgrade && \
     apk add \
         bash \
-        postfix \
         krb5-libs \
         libjpeg-turbo \
         shadow \
@@ -205,15 +204,12 @@ RUN /venv/bin/python3 -m pip install --no-cache-dir gunicorn==23.0.0 && \
     touch /pgadmin4/config_distro.py && \
     chown pgadmin:root /pgadmin4/config_distro.py && \
     chmod g=u /pgadmin4/config_distro.py && \
-    chmod g=u /etc/passwd && \
-    setcap CAP_NET_BIND_SERVICE=+eip /usr/local/bin/python3.[0-9][0-9] && \
-    echo "pgadmin ALL = NOPASSWD: /usr/sbin/postfix start" > /etc/sudoers.d/postfix && \
-    echo "pgadminr ALL = NOPASSWD: /usr/sbin/postfix start" >> /etc/sudoers.d/postfix
+    chmod g=u /etc/passwd
 
 USER 5050
 
 # Finish up
 VOLUME /var/lib/pgadmin
-EXPOSE 80 443
+EXPOSE 5050 5443
 
 ENTRYPOINT ["/entrypoint.sh"]
